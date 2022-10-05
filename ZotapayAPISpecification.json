@@ -1,0 +1,1377 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Zotapay Public API",
+    "description": "\nZotapay MG Deposit and Payout API enables Zotapay merchants to:\n\n- Accept online payments from their customers.\n- Accept payout / withdrawal requests from their customers. \n- Query for a transaction status on-demand. \n- Get real-time updates for events that occur within customer's payment process.\n\nLinks to deposit and payout documentation:\n- [Deposit API Documentation](https://doc.zotapay.com/deposit/1.0/#introduction)\n- [Payout API Documentaion](https://doc.zotapay.com/payout/1.1/#introduction)\n\n\\\nIn order to use this API, a merchant must first receive from Zotapay the following: \n\n`MerchantID` -  A merchant unique identifier, used for identification. \\\n`MerchantSecretKey`  - A secret key to keep privately and securely, used for authentication. \\\n`EndpointID`  - One or more unique endpoint identifiers to use in API requests. \n\n\\\nAPI URL - can switch between environments in the drop down below\n\n`https://api.zotapay-sandbox.com`  - Sandbox environment, used for integration and testing purposes. \\\n`https://api.zotapay.com or https://mg-api.zotapay.com`  - Live environment.\n\n\\\nSignature Generation\n\nEvery request must be signed by the merchant in order to be successfully authenticated by Zotapay servers. \\\nThe generated signature has to be manually inserted in the body of the request. \\\nThis [tool](https://mg-tools.zotapay.com/#/) can be used to generate signatures for each of the signing cases.\n\nServer generation\n\nSwagger API specifications can be used to generate server and client code for a number of coding languages. \\\nSwagger has an official tool for [this](https://swagger.io/tools/swagger-codegen/). \\\nSome example external libraries are linked here:\n- Python - [swagger-to](https://pypi.org/project/swagger-to/)\n- Golang - [go-swagger](https://github.com/go-swagger/go-swagger)\n\nLink to to the [repository](https://github.com/zotapay/public-api-specification) where Zotapay API specification can be downloaded.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://api.zotapay-sandbox.com"
+    },
+    {
+      "url": "https://api.zotapay.com"
+    },
+    {
+      "url": "https://mg-api.zotapay.com"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Deposit",
+      "description": "Issue a deposit request",
+      "externalDocs": {
+        "description": "Find out more",
+        "url": "https://doc.zotapay.com/deposit/1.0/#introduction"
+      }
+    },
+    {
+      "name": "Payout",
+      "description": "Issue a payout request",
+      "externalDocs": {
+        "description": "Find out more",
+        "url": "https://doc.zotapay.com/payout/1.1/#introduction"
+      }
+    },
+    {
+      "name": "Status Check",
+      "description": "Issue a status check request",
+      "externalDocs": {
+        "description": "Find out more",
+        "url": "https://doc.zotapay.com/deposit/1.0/#order-status-request"
+      }
+    }
+  ],
+  "paths": {
+    "/api/v1/deposit/request/{EndpointID}/": {
+      "post": {
+        "tags": [
+          "Deposit"
+        ],
+        "summary": "Create a deposit request",
+        "description": "Create a deposit request or card deposit request. The card details parameters (last 5 params in the example body) are only needed for card deposit request.",
+        "operationId": "depositId",
+        "parameters": [
+          {
+            "name": "EndpointID",
+            "in": "path",
+            "description": "Endpoint identifier to use in API request",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DepositOrder"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Deposit request created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/DepositResponse200"
+                    },
+                    {
+                      "$ref": "#/components/schemas/CardDepositResponse200"
+                    }
+                  ]
+                },
+                "examples": {
+                  "DepositResponse200": {
+                    "summary": "Deposit response"
+                  },
+                  "CardDepositResponse200": {
+                    "summary": "Card deposit response",
+                    "value": {
+                      "code": "200",
+                      "data": {
+                        "status": "PROCESSING",
+                        "merchantOrderID": "QvE8dZshpKhaOmHY",
+                        "orderID": "8b3a6b89697e8ac8f45d964bcc90c7ba41764acd"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Non-successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DepositResponse400"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DepositResponse401"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "Conflict"
+          },
+          "410": {
+            "description": "Error"
+          },
+          "500": {
+            "description": "Error"
+          }
+        },
+        "callbacks": {
+          "Deposit Callback": {
+            "{$request.body#/callbackUrl}": {
+              "post": {
+                "requestBody": {
+                  "required": true,
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/DepositCallback"
+                      }
+                    }
+                  }
+                },
+                "responses": {
+                  "200": {
+                    "description": "OK"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/payout/request/{EndpointID}/": {
+      "post": {
+        "tags": [
+          "Payout"
+        ],
+        "summary": "Create a payout request",
+        "description": "Create a payout request.",
+        "operationId": "payoutId",
+        "parameters": [
+          {
+            "name": "EndpointID",
+            "in": "path",
+            "description": "Endpoint identifier to use in API request",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PayoutOrder"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Payout request created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayoutResponse200"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Non-successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DepositResponse400"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DepositResponse401"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "Conflict"
+          },
+          "410": {
+            "description": "Error"
+          },
+          "500": {
+            "description": "Error"
+          }
+        },
+        "callbacks": {
+          "Payout Callback": {
+            "{$request.body#/callbackUrl}": {
+              "post": {
+                "requestBody": {
+                  "required": true,
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/PayoutCallback"
+                      }
+                    }
+                  }
+                },
+                "responses": {
+                  "200": {
+                    "description": "OK"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/query/order-status/": {
+      "get": {
+        "tags": [
+          "Status Check"
+        ],
+        "summary": "Issue an Order Status Request to get the most up-to-date status of customer’s order transaction",
+        "description": "Issue an Order Status Request",
+        "operationId": "orderStatusId",
+        "parameters": [
+          {
+            "name": "merchantID",
+            "required": true,
+            "description": "Unique merchant identifier provided by Zotapay",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 32,
+              "example": "EXAMPLE-MERCHANT-ID"
+            }
+          },
+          {
+            "name": "orderID",
+            "required": true,
+            "description": "Order unique identifier generated by Zotapay",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 128,
+              "example": "beb3e2e1cf59b0d275984ceaf58cd7f7b4b5b09a"
+            }
+          },
+          {
+            "name": "merchantOrderID",
+            "required": true,
+            "description": "Merchant-defined unique order identifier",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 128,
+              "example": "TbbQzewLWwDW6goc"
+            }
+          },
+          {
+            "name": "timestamp",
+            "required": true,
+            "description": "Unix timestamp of the request time",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 15,
+              "example": 1564617600
+            }
+          },
+          {
+            "name": "signature",
+            "required": true,
+            "description": "Request checksum encrypted with SHA-256, see Signature Generation above for explanation",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 64,
+              "example": "653105b9423fa0e18857e031e7ee87c3885f2b319a5fe1e191ac6005cdcb4835"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deposit order status requested successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/DepositOrderStatus200"
+                    },
+                    {
+                      "$ref": "#/components/schemas/PayoutOrderStatus200"
+                    }
+                  ]
+                },
+                "examples": {
+                  "DepositResponse200": {
+                    "summary": "Deposit order status response"
+                  },
+                  "CardDepositResponse200": {
+                    "summary": "Payout order status response",
+                    "value": {
+                      "code": "200",
+                      "data": {
+                        "type": "PAYOUT",
+                        "status": "PROCESSING",
+                        "errorMessage": "",
+                        "endpointID": "1050",
+                        "processorTransactionID": "",
+                        "orderID": "beb3e2e1cf59b0d275984ceaf58cd7f7b4b5b09a",
+                        "merchantOrderID": "TbbQzewLWwDW6goc",
+                        "amount": "500.00",
+                        "currency": "THB",
+                        "customerEmail": "customer@email-address.com",
+                        "customParam": "{\"UserId\": \"e139b447\"}",
+                        "extraData": "",
+                        "request": {
+                          "merchantID": "EXAMPLE-MERCHANT-ID",
+                          "orderID": "beb3e2e1cf59b0d275984ceaf58cd7f7b4b5b09a",
+                          "merchantOrderID": "TbbQzewLWwDW6goc",
+                          "timestamp": "1564617600"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Non-successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusCheckResponse400"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DepositResponse401"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "Conflict"
+          },
+          "410": {
+            "description": "Error"
+          },
+          "500": {
+            "description": "Error"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "DepositOrder": {
+        "type": "object",
+        "properties": {
+          "merchantOrderID": {
+            "type": "string",
+            "example": "QvE8dZshpKhaOmHY",
+            "maxLength": 128
+          },
+          "merchantOrderDesc": {
+            "type": "string",
+            "example": "Test order",
+            "maxLength": 128
+          },
+          "orderAmount": {
+            "type": "string",
+            "example": 500,
+            "maxLength": 24
+          },
+          "orderCurrency": {
+            "type": "string",
+            "example": "THB",
+            "maxLength": 3
+          },
+          "customerEmail": {
+            "type": "string",
+            "example": "customer@email-address.com",
+            "maxLength": 50
+          },
+          "customerFirstName": {
+            "type": "string",
+            "example": "John",
+            "maxLength": 128
+          },
+          "customerLastName": {
+            "type": "string",
+            "example": "Doe",
+            "maxLength": 128
+          },
+          "customerAddress": {
+            "type": "string",
+            "example": "5/5 Moo 5 Thong Nai Pan Noi Beach, Baan Tai, Koh Phangan",
+            "maxLength": 128
+          },
+          "customerCountryCode": {
+            "type": "string",
+            "example": "TH",
+            "maxLength": 2
+          },
+          "customerCity": {
+            "type": "string",
+            "example": "Surat Thani",
+            "maxLength": 128
+          },
+          "customerZipCode": {
+            "type": "string",
+            "example": 84280,
+            "maxLength": 15
+          },
+          "customerPhone": {
+            "type": "string",
+            "example": "+66-77999110",
+            "maxLength": 15
+          },
+          "customerIP": {
+            "type": "string",
+            "example": "103.106.8.104",
+            "maxLength": 64
+          },
+          "redirectUrl": {
+            "type": "string",
+            "example": "https://www.example-merchant.com/payment-return/",
+            "maxLength": 255
+          },
+          "callbackUrl": {
+            "type": "string",
+            "example": "https://www.example-merchant.com/payment-callback/",
+            "maxLength": 255
+          },
+          "customParam": {
+            "type": "string",
+            "example": "{\"UserId\": \"e139b447\"}",
+            "maxLength": 128
+          },
+          "checkoutUrl": {
+            "type": "string",
+            "example": "https://www.example-merchant.com/account/deposit/?uid=e139b447",
+            "maxLength": 256
+          },
+          "signature": {
+            "type": "string",
+            "example": "47d7ed292cf10e689b311ef5573eddbcc8505fe51e20d3f74e6b33756d96800b",
+            "maxLength": 64
+          },
+          "cardNumber": {
+            "type": "string",
+            "example": 3453789023457760,
+            "maxLength": 16
+          },
+          "cardHolderName": {
+            "type": "string",
+            "example": "John Doe",
+            "maxLength": 64
+          },
+          "cardExpirationMonth": {
+            "type": "string",
+            "example": 2,
+            "maxLength": 2
+          },
+          "cardExpirationYear": {
+            "type": "string",
+            "example": 2020,
+            "maxLength": 4
+          },
+          "cardCvv": {
+            "type": "string",
+            "example": 123,
+            "maxLength": 4
+          }
+        }
+      },
+      "DepositResponse200": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": 200
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "depositUrl": {
+                "type": "string",
+                "example": "https://api.zotapay.com/api/v1/deposit/init/8b3a6b89697e8ac8f45d964bcc90c7ba41764acd/"
+              },
+              "merchantOrderID": {
+                "type": "string",
+                "example": "QvE8dZshpKhaOmHY"
+              },
+              "orderID": {
+                "type": "string",
+                "example": "8b3a6b89697e8ac8f45d964bcc90c7ba41764acd"
+              }
+            }
+          }
+        }
+      },
+      "CardDepositResponse200": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": 200
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string",
+                "example": "PROCESSING"
+              },
+              "merchantOrderID": {
+                "type": "string",
+                "example": "QvE8dZshpKhaOmHY"
+              },
+              "orderID": {
+                "type": "string",
+                "example": "8b3a6b89697e8ac8f45d964bcc90c7ba41764acd"
+              }
+            }
+          }
+        }
+      },
+      "DepositResponse401": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": 401
+          },
+          "message": {
+            "type": "string",
+            "example": "unauthorized"
+          }
+        }
+      },
+      "DepositResponse400": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": 400
+          },
+          "message": {
+            "type": "string",
+            "example": "endpoint currency mismatch"
+          }
+        }
+      },
+      "PayoutOrder": {
+        "type": "object",
+        "properties": {
+          "merchantOrderID": {
+            "type": "string",
+            "example": "TbbQzewLWwDW6goc",
+            "maxLength": 128
+          },
+          "merchantOrderDesc": {
+            "type": "string",
+            "example": "Test order",
+            "maxLength": 128
+          },
+          "orderAmount": {
+            "type": "string",
+            "example": 500,
+            "maxLength": 24
+          },
+          "orderCurrency": {
+            "type": "string",
+            "example": "THB",
+            "maxLength": 3
+          },
+          "customerEmail": {
+            "type": "string",
+            "example": "customer@email-address.com",
+            "maxLength": 50
+          },
+          "customerFirstName": {
+            "type": "string",
+            "example": "John",
+            "maxLength": 128
+          },
+          "customerLastName": {
+            "type": "string",
+            "example": "Doe",
+            "maxLength": 128
+          },
+          "customerCountryCode": {
+            "type": "string",
+            "example": "TH",
+            "maxLength": 2
+          },
+          "customerPhone": {
+            "type": "string",
+            "example": "+66-77999110",
+            "maxLength": 15
+          },
+          "customerIP": {
+            "type": "string",
+            "example": "103.106.8.104",
+            "maxLength": 64
+          },
+          "customerPersonalID": {
+            "type": "string",
+            "example": 12345678,
+            "maxLength": 20
+          },
+          "customerBankCode": {
+            "type": "string",
+            "example": "BBL",
+            "maxLength": 11
+          },
+          "customerBankAccountNumber": {
+            "type": "string",
+            "example": 100200,
+            "maxLength": 64
+          },
+          "customerBankAccountNumberDigit": {
+            "type": "string",
+            "example": 1,
+            "maxLength": 2
+          },
+          "customerBankAccountType": {
+            "type": "string",
+            "example": "checking",
+            "maxLength": 8
+          },
+          "customerBankSwiftCode": {
+            "type": "string",
+            "example": "Swift Code",
+            "maxLength": 35
+          },
+          "customerBankAccountName": {
+            "type": "string",
+            "example": "John Doe",
+            "maxLength": 128
+          },
+          "customerBankBranch": {
+            "type": "string",
+            "example": "Bank Branch",
+            "maxLength": 128
+          },
+          "customerBankBranchDigit": {
+            "type": "string",
+            "example": 1,
+            "maxLength": 2
+          },
+          "customerBankAddress": {
+            "type": "string",
+            "example": "Thong Nai Pan Noi Beach, Baan Tai, Koh Phangan",
+            "maxLength": 128
+          },
+          "customerBankZipCode": {
+            "type": "string",
+            "example": 84280,
+            "maxLength": 15
+          },
+          "customerBankRoutingNumber": {
+            "type": "string",
+            "example": 0,
+            "maxLength": 64
+          },
+          "customerBankProvince": {
+            "type": "string",
+            "example": "Bank Province",
+            "maxLength": 64
+          },
+          "customerBankArea": {
+            "type": "string",
+            "example": "Bank Area / City",
+            "maxLength": 64
+          },
+          "callbackUrl": {
+            "type": "string",
+            "example": "https://www.example-merchant.com/payment-callback/",
+            "maxLength": 255
+          },
+          "customParam": {
+            "type": "string",
+            "example": "{\"UserId\": \"e139b447\"}",
+            "maxLength": 128
+          },
+          "redirectUrl": {
+            "type": "string",
+            "example": "https://www.example-merchant.com/payment-return/"
+          },
+          "checkoutUrl": {
+            "type": "string",
+            "example": "https://www.example-merchant.com/account/deposit/?uid=e139b447",
+            "maxLength": 256
+          },
+          "signature": {
+            "type": "string",
+            "example": "47d7ed292cf10e689b311ef5573eddbcc8505fe51e20d3f74e6b33756d96800b"
+          }
+        }
+      },
+      "PayoutResponse200": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": 200
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "merchantOrderID": {
+                "type": "string",
+                "example": "TbbQzewLWwDW6goc"
+              },
+              "orderID": {
+                "type": "string",
+                "example": "beb3e2e1cf59b0d275984ceaf58cd7f7b4b5b09a"
+              }
+            }
+          }
+        }
+      },
+      "DepositOrderStatus200": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": 200
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "example": "SALE"
+              },
+              "status": {
+                "type": "string",
+                "example": "PROCESSING"
+              },
+              "errorMessage": {
+                "type": "string",
+                "example": ""
+              },
+              "endpointID": {
+                "type": "string",
+                "example": 1050
+              },
+              "processorTransactionID": {
+                "type": "string",
+                "example": ""
+              },
+              "orderID": {
+                "type": "string",
+                "example": "8b3a6b89697e8ac8f45d964bcc90c7ba41764acd"
+              },
+              "merchantOrderID": {
+                "type": "string",
+                "example": "QvE8dZshpKhaOmHY"
+              },
+              "amount": {
+                "type": "string",
+                "example": 500
+              },
+              "currency": {
+                "type": "string",
+                "example": "THB"
+              },
+              "customerEmail": {
+                "type": "string",
+                "example": "customer@email-address.com"
+              },
+              "customParam": {
+                "type": "string",
+                "example": "{\"UserId\": \"e139b447\"}"
+              },
+              "extraData": {
+                "type": "object",
+                "properties": {
+                  "amountChanged": {
+                    "type": "boolean",
+                    "example": true
+                  },
+                  "amountRounded": {
+                    "type": "boolean",
+                    "example": true
+                  },
+                  "amountManipulated": {
+                    "type": "boolean",
+                    "example": true
+                  },
+                  "dcc": {
+                    "type": "boolean",
+                    "example": true
+                  },
+                  "originalAmount": {
+                    "type": "string",
+                    "example": "499.98"
+                  },
+                  "paymentMethod": {
+                    "type": "string",
+                    "example": "INSTANT-BANK-WIRE"
+                  },
+                  "selectedBankCode": {
+                    "type": "string",
+                    "example": "SCB"
+                  },
+                  "selectedBankName": {
+                    "type": "string",
+                    "example": ""
+                  }
+                }
+              },
+              "request": {
+                "type": "object",
+                "properties": {
+                  "merchantID": {
+                    "type": "string",
+                    "example": "EXAMPLE-MERCHANT-ID"
+                  },
+                  "orderID": {
+                    "type": "string",
+                    "example": "8b3a6b89697e8ac8f45d964bcc90c7ba41764acd"
+                  },
+                  "merchantOrderID": {
+                    "type": "string",
+                    "example": "QvE8dZshpKhaOmHY"
+                  },
+                  "timestamp": {
+                    "type": "string",
+                    "example": 1564617600
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "PayoutOrderStatus200": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": 200
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "example": "SALE"
+              },
+              "status": {
+                "type": "string",
+                "example": "PROCESSING"
+              },
+              "errorMessage": {
+                "type": "string",
+                "example": ""
+              },
+              "endpointID": {
+                "type": "string",
+                "example": 1050
+              },
+              "processorTransactionID": {
+                "type": "string",
+                "example": ""
+              },
+              "orderID": {
+                "type": "string",
+                "example": "8b3a6b89697e8ac8f45d964bcc90c7ba41764acd"
+              },
+              "merchantOrderID": {
+                "type": "string",
+                "example": "QvE8dZshpKhaOmHY"
+              },
+              "amount": {
+                "type": "string",
+                "example": 500
+              },
+              "currency": {
+                "type": "string",
+                "example": "THB"
+              },
+              "customerEmail": {
+                "type": "string",
+                "example": "customer@email-address.com"
+              },
+              "customParam": {
+                "type": "string",
+                "example": "{\"UserId\": \"e139b447\"}"
+              },
+              "extraData": {
+                "type": "string",
+                "example": ""
+              },
+              "request": {
+                "type": "object",
+                "properties": {
+                  "merchantID": {
+                    "type": "string",
+                    "example": "EXAMPLE-MERCHANT-ID"
+                  },
+                  "orderID": {
+                    "type": "string",
+                    "example": "8b3a6b89697e8ac8f45d964bcc90c7ba41764acd"
+                  },
+                  "merchantOrderID": {
+                    "type": "string",
+                    "example": "QvE8dZshpKhaOmHY"
+                  },
+                  "timestamp": {
+                    "type": "string",
+                    "example": 1564617600
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "StatusCheckResponse400": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": 400
+          },
+          "message": {
+            "type": "string",
+            "example": "timestamp too old"
+          }
+        }
+      },
+      "DepositCallback": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "SALE"
+          },
+          "amount": {
+            "type": "string",
+            "example": "500.00"
+          },
+          "status": {
+            "type": "string",
+            "example": "APPROVED"
+          },
+          "orderID": {
+            "type": "string",
+            "example": "8b3a6b89697e8ac8f45d964bcc90c7ba41764acd"
+          },
+          "currency": {
+            "type": "string",
+            "example": "THB"
+          },
+          "extraData": {
+            "type": "object",
+            "properties": {
+              "amountChanged": {
+                "type": "boolean",
+                "example": true
+              },
+              "amountRounded": {
+                "type": "boolean",
+                "example": true
+              },
+              "amountManipulated": {
+                "type": "boolean",
+                "example": false
+              },
+              "dcc": {
+                "type": "boolean",
+                "example": false
+              },
+              "originalAmount": {
+                "type": "string",
+                "example": "499.98"
+              },
+              "paymentMethod": {
+                "type": "string",
+                "example": "INSTANT-BANK-WIRE"
+              },
+              "selectedBankCode": {
+                "type": "string",
+                "example": "SCB"
+              },
+              "selectedBankName": {
+                "type": "string",
+                "example": ""
+              }
+            }
+          },
+          "signature": {
+            "type": "string",
+            "example": "062c0480aafd1faf735b987f5a2f878634d7931ffb3df256cdbfa77c31a2a4cc"
+          },
+          "endpointID": {
+            "type": "string",
+            "example": 1050
+          },
+          "customParam": {
+            "type": "string",
+            "example": "{\"UserId\": \"e139b447\"}"
+          },
+          "errorMessage": {
+            "type": "string",
+            "example": ""
+          },
+          "customerEmail": {
+            "type": "string",
+            "example": "customer@email-address.com"
+          },
+          "merchantOrderID": {
+            "type": "string",
+            "example": "QvE8dZshpKhaOmHY"
+          },
+          "originalRequest": {
+            "type": "object",
+            "properties": {
+              "merchantOrderID": {
+                "type": "string",
+                "example": "QvE8dZshpKhaOmHY"
+              },
+              "merchantOrderDesc": {
+                "type": "string",
+                "example": "Test order"
+              },
+              "orderAmount": {
+                "type": "string",
+                "example": "500.00"
+              },
+              "orderCurrency": {
+                "type": "string",
+                "example": "THB"
+              },
+              "customerEmail": {
+                "type": "string",
+                "example": "customer@email-address.com"
+              },
+              "customerFirstName": {
+                "type": "string",
+                "example": "John"
+              },
+              "customerLastName": {
+                "type": "string",
+                "example": "Doe"
+              },
+              "customerAddress": {
+                "type": "string",
+                "example": "5/5 Moo 5 Thong Nai Pan Noi Beach, Baan Tai, Koh Phangan"
+              },
+              "customerCountryCode": {
+                "type": "string",
+                "example": "TH"
+              },
+              "customerCity": {
+                "type": "string",
+                "example": "Surat Thani"
+              },
+              "customerZipCode": {
+                "type": "string",
+                "example": "84280"
+              },
+              "customerPhone": {
+                "type": "string",
+                "example": "+66-77999110"
+              },
+              "customerIP": {
+                "type": "string",
+                "example": "103.106.8.104"
+              },
+              "redirectUrl": {
+                "type": "string",
+                "example": "https://www.example-merchant.com/payment-return/"
+              },
+              "callbackUrl": {
+                "type": "string",
+                "example": "https://www.example-merchant.com/payment-callback/"
+              },
+              "customParam": {
+                "type": "string",
+                "example": "{\"UserId\": \"e139b447\"}"
+              },
+              "checkoutUrl": {
+                "type": "string",
+                "example": "https://www.example-merchant.com/account/deposit/?uid=e139b447"
+              },
+              "signature": {
+                "type": "string",
+                "example": "47d7ed292cf10e689b311ef5573eddbcc8505fe51e20d3f74e6b33756d96800b"
+              },
+              "customerState": {
+                "type": "string",
+                "example": ""
+              }
+            }
+          },
+          "processorTransactionID": {
+            "type": "string",
+            "example": 139821
+          }
+        }
+      },
+      "PayoutCallback": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "PAYOUT"
+          },
+          "amount": {
+            "type": "string",
+            "example": "500.00"
+          },
+          "status": {
+            "type": "string",
+            "example": "APPROVED"
+          },
+          "orderID": {
+            "type": "string",
+            "example": "beb3e2e1cf59b0d275984ceaf58cd7f7b4b5b09a"
+          },
+          "currency": {
+            "type": "string",
+            "example": "THB"
+          },
+          "extraData": {
+            "type": "object",
+            "properties": {
+              "ID": {
+                "type": "string",
+                "example": "000139825"
+              },
+              "Note": {
+                "type": "string",
+                "example": "Test order"
+              },
+              "Amount": {
+                "type": "string",
+                "example": "500.00"
+              },
+              "Status": {
+                "type": "string",
+                "example": "000"
+              },
+              "Currency": {
+                "type": "string",
+                "example": "THB"
+              },
+              "Customer": {
+                "type": "string",
+                "example": "customer@email-address.com"
+              },
+              "Datetime": {
+                "type": "string",
+                "example": "2019-08-01 09:00:00PM"
+              },
+              "StatementDate": {
+                "type": "string",
+                "example": "2019-08-01 10:10:00PM"
+              },
+              "selectedBankCode": {
+                "type": "string",
+                "example": "BBL"
+              },
+              "selectedBankName": {
+                "type": "string",
+                "example": "Bangkok Bank"
+              }
+            }
+          },
+          "signature": {
+            "type": "string",
+            "example": "6a27d8baea0e676820ceddb994259619134ece0d2ecaf8c033452d48f947ffa5"
+          },
+          "endpointID": {
+            "type": "string",
+            "example": "1050"
+          },
+          "customParam": {
+            "type": "string",
+            "example": "{\"UserId\": \"e139b447\"}"
+          },
+          "errorMessage": {
+            "type": "string",
+            "example": ""
+          },
+          "customerEmail": {
+            "type": "string",
+            "example": "customer@email-address.com"
+          },
+          "merchantOrderID": {
+            "type": "string",
+            "example": "TbbQzewLWwDW6goc"
+          },
+          "originalRequest": {
+            "type": "object",
+            "properties": {
+              "merchantOrderID": {
+                "type": "string",
+                "example": "TbbQzewLWwDW6goc"
+              },
+              "merchantOrderDesc": {
+                "type": "string",
+                "example": "Test order"
+              },
+              "orderAmount": {
+                "type": "string",
+                "example": "500.00"
+              },
+              "orderCurrency": {
+                "type": "string",
+                "example": "THB"
+              },
+              "customerEmail": {
+                "type": "string",
+                "example": "customer@email-address.com"
+              },
+              "customerFirstName": {
+                "type": "string",
+                "example": "John"
+              },
+              "customerLastName": {
+                "type": "string",
+                "example": "Doe"
+              },
+              "customerCountryCode": {
+                "type": "string",
+                "example": "TH"
+              },
+              "customerPhone": {
+                "type": "string",
+                "example": "+66-77999110"
+              },
+              "customerIP": {
+                "type": "string",
+                "example": "103.106.8.104"
+              },
+              "callbackUrl": {
+                "type": "string",
+                "example": "https://www.example-merchant.com/payout-callback/"
+              },
+              "customerBankCode": {
+                "type": "string",
+                "example": "BBL"
+              },
+              "customerBankAccountNumber": {
+                "type": "string",
+                "example": "100200"
+              },
+              "customerBankAccountName": {
+                "type": "string",
+                "example": "John Doe"
+              },
+              "customerBankBranch": {
+                "type": "string",
+                "example": "Bank Branch"
+              },
+              "customerBankAddress": {
+                "type": "string",
+                "example": "Thong Nai Pan Noi Beach, Baan Tai, Koh Phangan"
+              },
+              "customerBankZipCode": {
+                "type": "string",
+                "example": "84280"
+              },
+              "customerBankProvince": {
+                "type": "string",
+                "example": "Bank Province"
+              },
+              "customerBankArea": {
+                "type": "string",
+                "example": "Bank Area / City"
+              },
+              "customerBankRoutingNumber": {
+                "type": "string",
+                "example": "000"
+              },
+              "customParam": {
+                "type": "string",
+                "example": "{\"UserId\": \"e139b447\"}"
+              },
+              "checkoutUrl": {
+                "type": "string",
+                "example": "https://www.example-merchant.com/account/withdrawal/?uid=e139b447"
+              },
+              "signature": {
+                "type": "string",
+                "example": "d04ccb6a14d2c9e6f566766b8158bc4dd5ab6c3bb964a446da92aa61b882d88b"
+              },
+              "customerState": {
+                "type": "string",
+                "example": ""
+              },
+              "midDescriptor": {
+                "type": "string",
+                "example": ""
+              },
+              "paymentMethod": {
+                "type": "string",
+                "example": ""
+              }
+            }
+          },
+          "processorTransactionID": {
+            "type": "string",
+            "example": "000139825"
+          }
+        }
+      }
+    }
+  }
+}
